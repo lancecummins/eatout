@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+*.tsbuildinfo
+
+# Misc
+.DS_Store
+*.log
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Environment variables (keep .env.example)
+.env
+.env.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Expo
+.expo/
+.expo-shared/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# PWA / Service Workers
+sw.js
+sw.js.map
+workbox-*.js
+workbox-*.js.map
+dev-dist/

@@ -1,0 +1,25 @@
+{
+  "name": "eatout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EatOut - Group restaurant decision app",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "pnpm --filter @eatout/web dev",
+    "dev:mobile": "pnpm --filter @eatout/mobile start",
+    "build:web": "pnpm --filter @eatout/web build",
+    "build:shared": "pnpm --filter @eatout/shared build",
+    "build": "pnpm build:shared && pnpm build:web",
+    "type-check": "pnpm -r type-check",
+    "clean": "pnpm -r clean"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
