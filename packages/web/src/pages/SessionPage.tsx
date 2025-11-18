@@ -49,8 +49,6 @@ export function SessionPage() {
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = session?.adminId === userId;
-
   // Load session and subscribe to updates
   useEffect(() => {
     if (!sessionId) {
@@ -340,50 +338,14 @@ export function SessionPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
+      {/* Compact Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-slate-600 hover:text-slate-900"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-slate-900">
+              Code: {formatJoinCode(session.joinCode)}
+            </h1>
             <ShareButton onClick={handleShare} />
-          </div>
-
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                Code: {formatJoinCode(session.joinCode)}
-              </h1>
-              <p className="text-sm text-slate-600">
-                {statistics?.participantCount || 0} {statistics?.participantCount === 1 ? 'person' : 'people'} voting
-              </p>
-            </div>
-            {isAdmin && (
-              <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm font-medium rounded-full">
-                Admin
-              </span>
-            )}
-          </div>
-
-          {/* Progress Steps */}
-          <div>
-            <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
           </div>
         </div>
       </div>
@@ -423,13 +385,17 @@ export function SessionPage() {
               })}
             </div>
 
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <button
                 onClick={handleAdvanceStage}
                 className="btn btn-primary btn-lg"
               >
                 Continue to Venues →
               </button>
+              {/* Progress Steps */}
+              <div className="pt-2">
+                <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
+              </div>
             </div>
           </div>
         )}
@@ -467,13 +433,17 @@ export function SessionPage() {
               })}
             </div>
 
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <button
                 onClick={handleAdvanceStage}
                 className="btn btn-primary btn-lg"
               >
                 Continue to Restaurants →
               </button>
+              {/* Progress Steps */}
+              <div className="pt-2">
+                <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
+              </div>
             </div>
           </div>
         )}
@@ -529,13 +499,17 @@ export function SessionPage() {
               </div>
             )}
 
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <button
                 onClick={handleAdvanceStage}
                 className="btn btn-primary btn-lg"
               >
                 See Final Results →
               </button>
+              {/* Progress Steps */}
+              <div className="pt-2">
+                <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
+              </div>
             </div>
           </div>
         )}
@@ -624,6 +598,11 @@ export function SessionPage() {
                 </div>
               );
             })()}
+
+            {/* Progress Steps */}
+            <div className="text-center pt-4">
+              <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
+            </div>
           </div>
         )}
       </div>
