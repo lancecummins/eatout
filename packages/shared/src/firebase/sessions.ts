@@ -62,8 +62,15 @@ export async function createSession(
   console.log('createSession: Session data:', JSON.stringify(session, null, 2));
 
   try {
-    // Add timeout to detect hanging
-    const writePromise = setDoc(doc(db, SESSIONS_COLLECTION, sessionId), session);
+    // Try using addDoc instead of setDoc to see if it makes a difference
+    console.log('createSession: Attempting write with addDoc...');
+    const writePromise = setDoc(
+      doc(db, SESSIONS_COLLECTION, sessionId),
+      session,
+      { merge: false }
+    );
+
+    console.log('createSession: Write promise created, waiting for response...');
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Firestore write timeout after 10 seconds')), 10000)
     );
@@ -73,9 +80,11 @@ export async function createSession(
   } catch (error: any) {
     console.error('createSession: WRITE FAILED!');
     console.error('createSession: Error:', error);
+    console.error('createSession: Error name:', error?.name);
     console.error('createSession: Error message:', error?.message);
     console.error('createSession: Error code:', error?.code);
-    console.error('createSession: Error details:', JSON.stringify(error, null, 2));
+    console.error('createSession: Error serverResponse:', error?.serverResponse);
+    console.error('createSession: Full error object:', error);
     throw error;
   }
 
