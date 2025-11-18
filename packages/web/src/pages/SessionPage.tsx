@@ -332,10 +332,6 @@ export function SessionPage() {
     );
   }
 
-  const eliminatedCuisinesCount = userResponse?.eliminatedCuisines.length || 0;
-  const eliminatedVenuesCount = userResponse?.eliminatedVenues.length || 0;
-  const eliminatedRestaurantsCount = userResponse?.eliminatedRestaurants.length || 0;
-
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Compact Header */}
@@ -355,15 +351,9 @@ export function SessionPage() {
         {currentStage === 'cuisines' && (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                Step 1: Eliminate Cuisines
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">
+                Step 1: Which cuisines are out?
               </h2>
-              <p className="text-slate-600 text-lg">
-                Tap what you <strong>DON'T</strong> want to eat 🚫
-              </p>
-              <p className="text-sm text-slate-500 mt-2">
-                {eliminatedCuisinesCount} of {CUISINE_CATEGORIES.length} eliminated
-              </p>
             </div>
 
             {/* Cuisine Grid */}
@@ -403,15 +393,9 @@ export function SessionPage() {
         {currentStage === 'venues' && (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                Step 2: Eliminate Venue Types
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">
+                Step 2: Which venue types are out?
               </h2>
-              <p className="text-slate-600 text-lg">
-                Tap the types of places you <strong>DON'T</strong> want 🚫
-              </p>
-              <p className="text-sm text-slate-500 mt-2">
-                {eliminatedVenuesCount} of {VENUE_CATEGORIES.length} eliminated
-              </p>
             </div>
 
             {/* Venue Grid */}
@@ -451,17 +435,9 @@ export function SessionPage() {
         {currentStage === 'restaurants' && (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                Step 3: Eliminate Restaurants
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">
+                Step 3: Which restaurants are out?
               </h2>
-              <p className="text-slate-600 text-lg">
-                Tap what you <strong>DON'T</strong> want to eat 🚫
-              </p>
-              {!isLoadingRestaurants && restaurants.length > 0 && (
-                <p className="text-sm text-slate-500 mt-2">
-                  {restaurants.length} restaurants found • {eliminatedRestaurantsCount} eliminated
-                </p>
-              )}
             </div>
 
             {isLoadingRestaurants ? (
