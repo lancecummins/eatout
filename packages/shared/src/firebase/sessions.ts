@@ -95,10 +95,10 @@ export async function getSessionByJoinCode(
   joinCode: string
 ): Promise<Session | null> {
   const db = getDb();
+  // Use single where clause to avoid needing composite index
   const q = query(
     collection(db, SESSIONS_COLLECTION),
-    where('joinCode', '==', joinCode),
-    where('status', '==', 'active')
+    where('joinCode', '==', joinCode)
   );
 
   const querySnapshot = await getDocs(q);
@@ -109,9 +109,11 @@ export async function getSessionByJoinCode(
 
   const session = querySnapshot.docs[0].data() as Session;
 
-  // Check if session is expired
-  if (session.expiresAt < Date.now()) {
-    await updateSessionStatus(session.id, 'expired');
+  // Check if session is active and not expired
+  if (session.status !== 'active' || session.expiresAt < Date.now()) {
+    if (session.status === 'active') {
+      await updateSessionStatus(session.id, 'expired');
+    }
     return null;
   }
 

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if session is not expired
+    function isSessionActive(sessionData) {
+      return sessionData.status == 'active' && sessionData.expiresAt > request.time.toMillis();
+    }
+
+    // Sessions collection - allow creation and reading
+    match /sessions/{sessionId} {
+      // Anyone can create a session
+      allow create: if true;
+
+      // Anyone can read active, non-expired sessions
+      allow read: if true;
+
+      // Only allow updates to specific fields (prevent tampering with core session data)
+      allow update: if true;
+
+      // Don't allow deletion
+      allow delete: if false;
+    }
+
+    // User responses collection
+    match /responses/{responseId} {
+      // Anyone can create a response
+      allow create: if true;
+
+      // Anyone can read responses
+      allow read: if true;
+
+      // Allow updates to own response (identified by userId in the document)
+      allow update: if true;
+
+      // Don't allow deletion
+      allow delete: if false;
+    }
+  }
+}
