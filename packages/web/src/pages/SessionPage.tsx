@@ -194,6 +194,8 @@ export function SessionPage() {
     if (nextStage) {
       await updateStage(sessionId, userId, nextStage);
       setCurrentStage(nextStage);
+      // Scroll to top when advancing to next stage
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -201,6 +203,8 @@ export function SessionPage() {
     if (!sessionId) return;
     await updateStage(sessionId, userId, stage);
     setCurrentStage(stage);
+    // Scroll to top when clicking a stage
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Check if all restaurants in current batch are eliminated, load next batch
