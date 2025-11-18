@@ -31,6 +31,8 @@ export async function createSession(
   console.log('createSession: Starting...');
   const db = getDb();
   console.log('createSession: Got Firestore DB instance');
+  console.log('createSession: Firestore app name:', db.app.name);
+  console.log('createSession: Firestore project:', db.app.options.projectId);
 
   const now = Date.now();
   const expiresAt = now + SESSION_DURATION_HOURS * 60 * 60 * 1000;
