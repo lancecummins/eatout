@@ -94,30 +94,47 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 export async function getSessionByJoinCode(
   joinCode: string
 ): Promise<Session | null> {
-  const db = getDb();
-  // Use single where clause to avoid needing composite index
-  const q = query(
-    collection(db, SESSIONS_COLLECTION),
-    where('joinCode', '==', joinCode)
-  );
+  try {
+    console.log('getSessionByJoinCode: Starting query for joinCode:', joinCode);
+    const db = getDb();
+    console.log('getSessionByJoinCode: Got DB instance');
 
-  const querySnapshot = await getDocs(q);
+    // Use single where clause to avoid needing composite index
+    const q = query(
+      collection(db, SESSIONS_COLLECTION),
+      where('joinCode', '==', joinCode)
+    );
+    console.log('getSessionByJoinCode: Query created, executing getDocs...');
 
-  if (querySnapshot.empty) {
-    return null;
-  }
+    const querySnapshot = await getDocs(q);
+    console.log('getSessionByJoinCode: Query completed! Found', querySnapshot.size, 'documents');
 
-  const session = querySnapshot.docs[0].data() as Session;
-
-  // Check if session is active and not expired
-  if (session.status !== 'active' || session.expiresAt < Date.now()) {
-    if (session.status === 'active') {
-      await updateSessionStatus(session.id, 'expired');
+    if (querySnapshot.empty) {
+      console.log('getSessionByJoinCode: No matching sessions found');
+      return null;
     }
-    return null;
-  }
 
-  return session;
+    const session = querySnapshot.docs[0].data() as Session;
+    console.log('getSessionByJoinCode: Found session:', session.id, 'status:', session.status);
+
+    // Check if session is active and not expired
+    if (session.status !== 'active' || session.expiresAt < Date.now()) {
+      console.log('getSessionByJoinCode: Session is inactive or expired');
+      if (session.status === 'active') {
+        await updateSessionStatus(session.id, 'expired');
+      }
+      return null;
+    }
+
+    return session;
+  } catch (error: any) {
+    console.error('getSessionByJoinCode: ERROR occurred!', error);
+    console.error('getSessionByJoinCode: Error name:', error?.name);
+    console.error('getSessionByJoinCode: Error message:', error?.message);
+    console.error('getSessionByJoinCode: Error code:', error?.code);
+    console.error('getSessionByJoinCode: Full error:', JSON.stringify(error, null, 2));
+    throw error;
+  }
 }
 
 /**
