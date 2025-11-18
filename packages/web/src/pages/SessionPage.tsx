@@ -278,15 +278,15 @@ export function SessionPage() {
   };
 
   const handleShare = async () => {
-    if (!session) return;
+    if (!session || !sessionId) return;
 
-    const shareUrl = `${window.location.origin}/join/${session.joinCode}`;
-    const shareText = `Join our EatOut session! Code: ${formatJoinCode(session.joinCode)}`;
+    const shareUrl = `${window.location.origin}/session/${sessionId}`;
+    const shareText = `Help us pick a restaurant! Join my EatOut session and start eliminating options:\n\nCode: ${formatJoinCode(session.joinCode)}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join EatOut Session',
+          title: 'Help Pick a Restaurant!',
           text: shareText,
           url: shareUrl,
         });
