@@ -31,7 +31,7 @@ importers:
         specifier: workspace:*
         version: link:../shared
       firebase:
-        specifier: ^10.7.1
+        specifier: ^10.14.1
         version: 10.14.1
       react:
         specifier: ^18.2.0
