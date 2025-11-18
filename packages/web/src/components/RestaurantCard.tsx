@@ -23,9 +23,9 @@ export function RestaurantCard({
       onClick={onToggle}
       type="button"
       className={`
-        relative rounded-lg p-3 transition-all duration-200
+        relative rounded-lg p-2 transition-all duration-200
         cursor-pointer select-none
-        flex flex-col items-center justify-center gap-1 min-h-[80px]
+        flex flex-col items-center justify-center gap-0.5 min-h-[70px]
         ${
           showEliminated
             ? 'bg-red-100 border-2 border-red-300 scale-95 hover:scale-90'
@@ -35,7 +35,7 @@ export function RestaurantCard({
     >
       {/* Restaurant Name */}
       <h3
-        className={`text-xs font-bold text-center line-clamp-2 leading-tight ${
+        className={`text-[10px] font-bold text-center line-clamp-2 leading-tight ${
           showEliminated ? 'text-red-700 line-through' : 'text-slate-900'
         }`}
       >
@@ -44,11 +44,11 @@ export function RestaurantCard({
 
       {/* Rating */}
       {restaurant.rating && (
-        <div className={`flex items-center gap-1 ${showEliminated ? 'opacity-30' : 'opacity-100'}`}>
-          <svg className="w-3 h-3 fill-current text-yellow-500" viewBox="0 0 20 20">
+        <div className={`flex items-center gap-0.5 ${showEliminated ? 'opacity-30' : 'opacity-100'}`}>
+          <svg className="w-2.5 h-2.5 fill-current text-yellow-500" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
-          <span className="text-slate-900 font-semibold text-xs">{restaurant.rating}</span>
+          <span className="text-slate-900 font-semibold text-[10px]">{restaurant.rating}</span>
         </div>
       )}
 
@@ -56,7 +56,7 @@ export function RestaurantCard({
       {showEliminated && (
         <div className="absolute inset-0 flex items-center justify-center">
           <svg
-            className="w-12 h-12 text-red-600"
+            className="w-10 h-10 text-red-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -73,7 +73,7 @@ export function RestaurantCard({
 
       {/* Show count badge in corner */}
       {eliminationCount > 0 && totalParticipants > 0 && (
-        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg z-10">
+        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-lg z-10">
           {eliminationCount}/{totalParticipants}
         </div>
       )}
