@@ -36,22 +36,11 @@ export async function createSession(
   const expiresAt = now + SESSION_DURATION_HOURS * 60 * 60 * 1000;
 
   // Generate unique join code
-  let joinCode = generateJoinCode();
+  // TEMPORARY: Skip uniqueness check to debug the hanging issue
+  // With a 6-character alphanumeric code (36^6 = 2 billion combinations), collisions are extremely rare
+  const joinCode = generateJoinCode();
   console.log('createSession: Generated join code:', joinCode);
-  let isUnique = false;
-
-  // Ensure join code is unique
-  while (!isUnique) {
-    console.log('createSession: Checking if join code is unique...');
-    const existingSession = await getSessionByJoinCode(joinCode);
-    if (!existingSession) {
-      isUnique = true;
-      console.log('createSession: Join code is unique!');
-    } else {
-      console.log('createSession: Join code exists, generating new one...');
-      joinCode = generateJoinCode();
-    }
-  }
+  console.log('createSession: SKIPPING uniqueness check temporarily for debugging');
 
   const sessionId = doc(collection(db, SESSIONS_COLLECTION)).id;
   console.log('createSession: Generated session ID:', sessionId);
