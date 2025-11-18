@@ -367,7 +367,7 @@ export function SessionPage() {
             </div>
 
             {/* Cuisine Grid */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {CUISINE_CATEGORIES.map((category: PredefinedCategory) => {
                 const groupEliminationCount = statistics?.cuisineEliminationCounts[category.type] || 0;
                 const isEliminated = (userResponse?.eliminatedCuisines.includes(category.type) || false) || groupEliminationCount > 0;
@@ -415,7 +415,7 @@ export function SessionPage() {
             </div>
 
             {/* Venue Grid */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {VENUE_CATEGORIES.map((category: PredefinedCategory) => {
                 const groupEliminationCount = statistics?.venueEliminationCounts[category.type] || 0;
                 const isEliminated = (userResponse?.eliminatedVenues.includes(category.type) || false) || groupEliminationCount > 0;
@@ -480,7 +480,7 @@ export function SessionPage() {
                 <p className="text-slate-600">Waiting for everyone to finish Steps 1 & 2...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25).map((restaurant) => {
                   const groupEliminationCount = statistics?.restaurantEliminationCounts[restaurant.place_id] || 0;
                   const isEliminated = (userResponse?.eliminatedRestaurants.includes(restaurant.place_id) || false) || groupEliminationCount > 0;
@@ -584,7 +584,7 @@ export function SessionPage() {
               }
 
               return (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {finalRestaurants.map((restaurant) => (
                     <RestaurantCard
                       key={restaurant.place_id}
