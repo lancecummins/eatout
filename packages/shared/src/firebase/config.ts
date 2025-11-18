@@ -3,7 +3,7 @@
  */
 
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { Firestore, enableIndexedDbPersistence, initializeFirestore } from 'firebase/firestore';
 
 // Firebase configuration interface
 export interface FirebaseConfig {
@@ -26,7 +26,13 @@ export function initializeFirebase(config: FirebaseConfig): FirebaseApp {
     return firebaseApp;
   }
 
+  console.log('Initializing Firebase with config:', {
+    projectId: config.projectId,
+    authDomain: config.authDomain
+  });
+
   firebaseApp = initializeApp(config);
+  console.log('Firebase app initialized successfully');
   return firebaseApp;
 }
 
@@ -38,7 +44,21 @@ export function getDb(): Firestore {
     if (!firebaseApp) {
       throw new Error('Firebase not initialized. Call initializeFirebase() first.');
     }
-    firestoreDb = getFirestore(firebaseApp);
+
+    console.log('Initializing Firestore with experimentalForceLongPolling...');
+
+    // Initialize Firestore with settings that help with connectivity
+    firestoreDb = initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true, // Helps with connectivity issues
+      experimentalAutoDetectLongPolling: false,
+    });
+
+    console.log('Firestore initialized successfully');
+
+    // Try to enable offline persistence (optional, will fail silently if not supported)
+    enableIndexedDbPersistence(firestoreDb).catch((err) => {
+      console.warn('IndexedDB persistence not enabled:', err.code);
+    });
   }
   return firestoreDb;
 }

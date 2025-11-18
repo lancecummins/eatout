@@ -62,20 +62,15 @@ export async function createSession(
   console.log('createSession: Session data:', JSON.stringify(session, null, 2));
 
   try {
-    // Try using addDoc instead of setDoc to see if it makes a difference
-    console.log('createSession: Attempting write with addDoc...');
-    const writePromise = setDoc(
+    console.log('createSession: Attempting write with setDoc...');
+    console.log('createSession: DB type:', db.type);
+    console.log('createSession: DB app name:', db.app.name);
+
+    await setDoc(
       doc(db, SESSIONS_COLLECTION, sessionId),
-      session,
-      { merge: false }
+      session
     );
 
-    console.log('createSession: Write promise created, waiting for response...');
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Firestore write timeout after 10 seconds')), 10000)
-    );
-
-    await Promise.race([writePromise, timeoutPromise]);
     console.log('createSession: Session created successfully!');
   } catch (error: any) {
     console.error('createSession: WRITE FAILED!');
@@ -83,8 +78,18 @@ export async function createSession(
     console.error('createSession: Error name:', error?.name);
     console.error('createSession: Error message:', error?.message);
     console.error('createSession: Error code:', error?.code);
-    console.error('createSession: Error serverResponse:', error?.serverResponse);
-    console.error('createSession: Full error object:', error);
+    console.error('createSession: Error stack:', error?.stack);
+
+    // Check if it's a permissions error
+    if (error?.code === 'permission-denied') {
+      console.error('createSession: PERMISSION DENIED - Check Firestore security rules');
+    }
+
+    // Check if it's a network error
+    if (error?.code === 'unavailable' || error?.message?.includes('network')) {
+      console.error('createSession: NETWORK ERROR - Check internet connection and Firebase configuration');
+    }
+
     throw error;
   }
 
