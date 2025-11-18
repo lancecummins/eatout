@@ -234,3 +234,25 @@ export function subscribeToSession(
     callback(session);
   });
 }
+
+/**
+ * Store fetched restaurants in the session
+ * This should only be called once when the first user reaches step 3
+ */
+export async function storeRestaurantsInSession(
+  sessionId: string,
+  userId: string,
+  restaurants: any[]
+): Promise<void> {
+  const db = getDb();
+
+  console.log('storeRestaurantsInSession: Storing', restaurants.length, 'restaurants for session', sessionId);
+
+  await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
+    restaurants,
+    restaurantsFetchedAt: Date.now(),
+    restaurantsFetchedBy: userId,
+  });
+
+  console.log('storeRestaurantsInSession: Successfully stored restaurants');
+}

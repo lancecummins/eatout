@@ -282,3 +282,25 @@ export function subscribeToSessionResponses(
     callback(responses);
   });
 }
+
+/**
+ * Check if all users have completed steps 1 & 2 (cuisines and venues)
+ * Returns true if all participants are at 'restaurants' stage or beyond
+ */
+export async function areAllUsersReadyForRestaurants(
+  sessionId: string
+): Promise<boolean> {
+  const responses = await getSessionResponses(sessionId);
+
+  // If no one has responded yet, not ready
+  if (responses.length === 0) {
+    return false;
+  }
+
+  // Check if all users are at restaurants stage or complete
+  return responses.every(
+    response =>
+      response.currentStage === 'restaurants' ||
+      response.currentStage === 'complete'
+  );
+}

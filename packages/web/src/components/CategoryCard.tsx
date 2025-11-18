@@ -23,8 +23,8 @@ export function CategoryCard({
       onClick={onToggle}
       type="button"
       className={`
-        relative aspect-square rounded-xl p-4 transition-all duration-200
-        flex flex-col items-center justify-center gap-2
+        relative aspect-square rounded-lg p-2 transition-all duration-200
+        flex flex-col items-center justify-center gap-1
         cursor-pointer select-none
         ${
           showEliminated
@@ -34,14 +34,14 @@ export function CategoryCard({
       `}
     >
       {/* Emoji */}
-      <div className={`text-6xl md:text-7xl transition-opacity ${showEliminated ? 'opacity-30' : 'opacity-100'}`}>
+      <div className={`text-3xl transition-opacity ${showEliminated ? 'opacity-30' : 'opacity-100'}`}>
         {category.emoji}
       </div>
 
       {/* Name */}
       <div
         className={`
-          text-base md:text-lg font-semibold text-center transition-all
+          text-xs font-semibold text-center transition-all leading-tight
           ${showEliminated ? 'text-red-700 line-through' : 'text-slate-900'}
         `}
       >
@@ -52,7 +52,7 @@ export function CategoryCard({
       {showEliminated && (
         <div className="absolute inset-0 flex items-center justify-center">
           <svg
-            className="w-20 h-20 text-red-600"
+            className="w-12 h-12 text-red-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -69,7 +69,7 @@ export function CategoryCard({
 
       {/* Show count badge in corner */}
       {eliminationCount > 0 && totalParticipants > 0 && (
-        <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center shadow-lg">
+        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
           {eliminationCount}/{totalParticipants}
         </div>
       )}

@@ -14,6 +14,8 @@ import {
   updateStage,
   getUserResponse,
   calculateGroupStatistics,
+  storeRestaurantsInSession,
+  areAllUsersReadyForRestaurants,
   Session,
   Restaurant,
   UserResponse,
@@ -121,68 +123,55 @@ export function SessionPage() {
   }, [responses, sessionId]);
 
   // Load restaurants when entering restaurants stage
+  // This now uses a centralized approach: fetch once and store in session
   useEffect(() => {
-    if (currentStage === 'restaurants' && restaurants.length === 0 && session && userResponse) {
+    if (currentStage === 'restaurants' && session && userResponse && !session.restaurants) {
       const loadRestaurants = async () => {
-        // Calculate which types have NOT been eliminated by this user
-        const allCuisines = CUISINE_CATEGORIES.map(cat => cat.type);
-        const allVenues = VENUE_CATEGORIES.map(cat => cat.type);
-        const viableTypes = [
-          ...allCuisines.filter(type => !userResponse.eliminatedCuisines.includes(type)),
-          ...allVenues.filter(type => !userResponse.eliminatedVenues.includes(type)),
-        ];
+        if (!sessionId) return;
 
-        console.log('Loading restaurants for stage 3...', {
-          location: session.location,
-          radius: session.location.radius,
-          viableTypes: viableTypes.length,
-        });
+        console.log('Checking if ready to load restaurants...');
 
+        // Check if all users are ready for step 3
+        const allReady = await areAllUsersReadyForRestaurants(sessionId);
+
+        if (!allReady) {
+          console.log('Not all users ready yet, waiting...');
+          setIsLoadingRestaurants(true);
+          return;
+        }
+
+        console.log('All users ready! Loading restaurants for the group...');
         setIsLoadingRestaurants(true);
+
         try {
-          // Search for non-eliminated types
+          // Get group consensus on what types to search for
+          // We'll search for all types and let individual filtering happen client-side
           const restaurantsData = await searchNearbyRestaurants({
             location: session.location,
             radius: session.location.radius,
-            types: viableTypes.length > 0 ? viableTypes : undefined,
           });
+
           console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
 
-          // Log sample of types to debug cuisine filtering
-          console.log('Sample restaurant types:', restaurantsData.slice(0, 5).map(r => ({
-            name: r.name,
-            types: r.types
-          })));
-
-          // Filter out restaurants that have eliminated cuisine OR venue types
-          const filteredRestaurants = restaurantsData.filter(restaurant => {
-            if (!restaurant.types) return true;
-
-            // Check if restaurant has any eliminated cuisine types
-            const hasEliminatedCuisine = restaurant.types.some(type =>
-              userResponse.eliminatedCuisines.includes(type)
-            );
-
-            // Check if restaurant has any eliminated venue types
-            const hasEliminatedVenue = restaurant.types.some(type =>
-              userResponse.eliminatedVenues.includes(type)
-            );
-
-            return !hasEliminatedCuisine && !hasEliminatedVenue;
-          });
-
-          console.log('After cuisine + venue filtering:', filteredRestaurants.length, 'restaurants remain');
-          setRestaurants(filteredRestaurants);
+          // Store restaurants in session so all users see the same list
+          await storeRestaurantsInSession(sessionId, userId, restaurantsData);
+          console.log('Restaurants stored in session successfully');
         } catch (err) {
           console.error('Error loading restaurants:', err);
-        } finally {
           setIsLoadingRestaurants(false);
         }
       };
 
       loadRestaurants();
     }
-  }, [currentStage, restaurants.length, session, userResponse]);
+
+    // If session has restaurants already, use them
+    if (currentStage === 'restaurants' && session?.restaurants) {
+      console.log('Using stored restaurants from session:', session.restaurants.length);
+      setRestaurants(session.restaurants);
+      setIsLoadingRestaurants(false);
+    }
+  }, [currentStage, session, userResponse, sessionId, userId]);
 
   const handleAdvanceStage = async () => {
     if (!sessionId) return;
@@ -416,7 +405,7 @@ export function SessionPage() {
             </div>
 
             {/* Cuisine Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
               {CUISINE_CATEGORIES.map((category: PredefinedCategory) => {
                 const groupEliminationCount = statistics?.cuisineEliminationCounts[category.type] || 0;
                 const isEliminated = (userResponse?.eliminatedCuisines.includes(category.type) || false) || groupEliminationCount > 0;
@@ -460,7 +449,7 @@ export function SessionPage() {
             </div>
 
             {/* Venue Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
               {VENUE_CATEGORIES.map((category: PredefinedCategory) => {
                 const groupEliminationCount = statistics?.venueEliminationCounts[category.type] || 0;
                 const isEliminated = (userResponse?.eliminatedVenues.includes(category.type) || false) || groupEliminationCount > 0;
@@ -498,7 +487,7 @@ export function SessionPage() {
               <p className="text-slate-600 text-lg">
                 Tap what you <strong>DON'T</strong> want to eat 🚫
               </p>
-              {!isLoadingRestaurants && (
+              {!isLoadingRestaurants && restaurants.length > 0 && (
                 <p className="text-sm text-slate-500 mt-2">
                   {restaurants.length} restaurants found • {eliminatedRestaurantsCount} eliminated
                 </p>
@@ -508,10 +497,20 @@ export function SessionPage() {
             {isLoadingRestaurants ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mx-auto mb-4"></div>
-                <p className="text-slate-600">Finding restaurants...</p>
+                <p className="text-slate-600">
+                  {session?.restaurants ? 'Loading restaurants...' : 'Waiting for everyone to finish Steps 1 & 2...'}
+                </p>
+                <p className="text-sm text-slate-500 mt-2">
+                  {statistics?.participantCount || 0} {statistics?.participantCount === 1 ? 'person' : 'people'} in session
+                </p>
+              </div>
+            ) : restaurants.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mx-auto mb-4"></div>
+                <p className="text-slate-600">Waiting for everyone to finish Steps 1 & 2...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                 {restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25).map((restaurant) => {
                   const groupEliminationCount = statistics?.restaurantEliminationCounts[restaurant.place_id] || 0;
                   const isEliminated = (userResponse?.eliminatedRestaurants.includes(restaurant.place_id) || false) || groupEliminationCount > 0;
@@ -611,7 +610,7 @@ export function SessionPage() {
               }
 
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                   {finalRestaurants.map((restaurant) => (
                     <RestaurantCard
                       key={restaurant.place_id}

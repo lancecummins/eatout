@@ -15,6 +15,9 @@ export interface Session {
   location: Location;
   favoritedRestaurants: string[]; // Restaurant place_ids
   status: SessionStatus;
+  restaurants?: Restaurant[]; // Fetched restaurants for step 3 (stored once, shared by all)
+  restaurantsFetchedAt?: number; // Timestamp when restaurants were fetched
+  restaurantsFetchedBy?: string; // User ID who fetched the restaurants
 }
 
 export type SessionStatus = 'active' | 'completed' | 'expired';
