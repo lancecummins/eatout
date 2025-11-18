@@ -57,8 +57,25 @@ export async function createSession(
   };
 
   console.log('createSession: Writing session to Firestore...');
-  await setDoc(doc(db, SESSIONS_COLLECTION, sessionId), session);
-  console.log('createSession: Session created successfully!');
+  console.log('createSession: Session data:', JSON.stringify(session, null, 2));
+
+  try {
+    // Add timeout to detect hanging
+    const writePromise = setDoc(doc(db, SESSIONS_COLLECTION, sessionId), session);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore write timeout after 10 seconds')), 10000)
+    );
+
+    await Promise.race([writePromise, timeoutPromise]);
+    console.log('createSession: Session created successfully!');
+  } catch (error: any) {
+    console.error('createSession: WRITE FAILED!');
+    console.error('createSession: Error:', error);
+    console.error('createSession: Error message:', error?.message);
+    console.error('createSession: Error code:', error?.code);
+    console.error('createSession: Error details:', JSON.stringify(error, null, 2));
+    throw error;
+  }
 
   return session;
 }
