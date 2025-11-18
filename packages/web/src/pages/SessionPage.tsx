@@ -15,7 +15,6 @@ import {
   getUserResponse,
   calculateGroupStatistics,
   storeRestaurantsInSession,
-  areAllUsersReadyForRestaurants,
   Session,
   Restaurant,
   UserResponse,
@@ -127,26 +126,11 @@ export function SessionPage() {
       const loadRestaurants = async () => {
         if (!sessionId) return;
 
-        console.log('Checking if ready to load restaurants...');
-
-        // If only one participant, skip waiting for others
-        const participantCount = statistics?.participantCount || 0;
-        const isSolo = participantCount === 1;
-
-        // Check if all users are ready for step 3 (or if solo)
-        const allReady = isSolo || await areAllUsersReadyForRestaurants(sessionId);
-
-        if (!allReady) {
-          console.log('Not all users ready yet, waiting...');
-          setIsLoadingRestaurants(true);
-          return;
-        }
-
-        console.log(isSolo ? 'Solo session - loading restaurants immediately...' : 'All users ready! Loading restaurants for the group...');
+        console.log('Loading restaurants for Step 3...');
         setIsLoadingRestaurants(true);
 
         try {
-          // Get group consensus on what types to search for
+          // Fetch all restaurants in the area
           // We'll search for all types and let individual filtering happen client-side
           const restaurantsData = await searchNearbyRestaurants({
             location: session.location,
@@ -173,7 +157,7 @@ export function SessionPage() {
       setRestaurants(session.restaurants);
       setIsLoadingRestaurants(false);
     }
-  }, [currentStage, session, userResponse, sessionId, userId, statistics]);
+  }, [currentStage, session, userResponse, sessionId, userId]);
 
   const handleAdvanceStage = async () => {
     if (!sessionId) return;
