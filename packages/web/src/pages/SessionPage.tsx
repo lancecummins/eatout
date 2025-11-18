@@ -338,9 +338,29 @@ export function SessionPage() {
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-slate-900">
-              Code: {formatJoinCode(session.joinCode)}
-            </h1>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/')}
+                className="text-slate-600 hover:text-slate-900"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <h1 className="text-lg font-bold text-slate-900">
+                Code: {formatJoinCode(session.joinCode)}
+              </h1>
+            </div>
             <ShareButton onClick={handleShare} />
           </div>
         </div>
