@@ -129,8 +129,12 @@ export function SessionPage() {
 
         console.log('Checking if ready to load restaurants...');
 
-        // Check if all users are ready for step 3
-        const allReady = await areAllUsersReadyForRestaurants(sessionId);
+        // If only one participant, skip waiting for others
+        const participantCount = statistics?.participantCount || 0;
+        const isSolo = participantCount === 1;
+
+        // Check if all users are ready for step 3 (or if solo)
+        const allReady = isSolo || await areAllUsersReadyForRestaurants(sessionId);
 
         if (!allReady) {
           console.log('Not all users ready yet, waiting...');
@@ -138,7 +142,7 @@ export function SessionPage() {
           return;
         }
 
-        console.log('All users ready! Loading restaurants for the group...');
+        console.log(isSolo ? 'Solo session - loading restaurants immediately...' : 'All users ready! Loading restaurants for the group...');
         setIsLoadingRestaurants(true);
 
         try {
@@ -169,7 +173,7 @@ export function SessionPage() {
       setRestaurants(session.restaurants);
       setIsLoadingRestaurants(false);
     }
-  }, [currentStage, session, userResponse, sessionId, userId]);
+  }, [currentStage, session, userResponse, sessionId, userId, statistics]);
 
   const handleAdvanceStage = async () => {
     if (!sessionId) return;
