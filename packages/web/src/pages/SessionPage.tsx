@@ -15,6 +15,7 @@ import {
   getUserResponse,
   calculateGroupStatistics,
   storeRestaurantsInSession,
+  areAllUsersReadyForRestaurants,
   Session,
   Restaurant,
   UserResponse,
@@ -46,6 +47,7 @@ export function SessionPage() {
   const [restaurantBatchOffset, setRestaurantBatchOffset] = useState(0); // Track which batch of 25 we're showing
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+  const [isWaitingForOthers, setIsWaitingForOthers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load session and subscribe to updates
@@ -126,24 +128,37 @@ export function SessionPage() {
       const loadRestaurants = async () => {
         if (!sessionId) return;
 
-        console.log('Loading restaurants for Step 3...');
-        setIsLoadingRestaurants(true);
+        // Check if this is a solo session or if all users are ready
+        const isSoloSession = responses.length === 1;
+        const allUsersReady = await areAllUsersReadyForRestaurants(sessionId);
 
-        try {
-          // Fetch all restaurants in the area
-          // We'll search for all types and let individual filtering happen client-side
-          const restaurantsData = await searchNearbyRestaurants({
-            location: session.location,
-            radius: session.location.radius,
-          });
+        if (isSoloSession || allUsersReady) {
+          // Load restaurants if solo OR all users are ready
+          console.log('Loading restaurants for Step 3...');
+          setIsLoadingRestaurants(true);
+          setIsWaitingForOthers(false);
 
-          console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
+          try {
+            // Fetch all restaurants in the area
+            // We'll search for all types and let individual filtering happen client-side
+            const restaurantsData = await searchNearbyRestaurants({
+              location: session.location,
+              radius: session.location.radius,
+            });
 
-          // Store restaurants in session so all users see the same list
-          await storeRestaurantsInSession(sessionId, userId, restaurantsData);
-          console.log('Restaurants stored in session successfully');
-        } catch (err) {
-          console.error('Error loading restaurants:', err);
+            console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
+
+            // Store restaurants in session so all users see the same list
+            await storeRestaurantsInSession(sessionId, userId, restaurantsData);
+            console.log('Restaurants stored in session successfully');
+          } catch (err) {
+            console.error('Error loading restaurants:', err);
+            setIsLoadingRestaurants(false);
+          }
+        } else {
+          // Multi-user session but not all users are ready
+          console.log('Waiting for other users to complete Steps 1 & 2...');
+          setIsWaitingForOthers(true);
           setIsLoadingRestaurants(false);
         }
       };
@@ -156,8 +171,9 @@ export function SessionPage() {
       console.log('Using stored restaurants from session:', session.restaurants.length);
       setRestaurants(session.restaurants);
       setIsLoadingRestaurants(false);
+      setIsWaitingForOthers(false);
     }
-  }, [currentStage, session, userResponse, sessionId, userId]);
+  }, [currentStage, session, userResponse, sessionId, userId, responses]);
 
   const handleAdvanceStage = async () => {
     if (!sessionId) return;
@@ -448,20 +464,29 @@ export function SessionPage() {
               </h2>
             </div>
 
-            {isLoadingRestaurants ? (
+            {isWaitingForOthers ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mx-auto mb-4"></div>
+                <div className="mb-4">
+                  <svg className="w-16 h-16 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-lg font-semibold text-slate-900 mb-2">Waiting for other participants</p>
                 <p className="text-slate-600">
-                  {session?.restaurants ? 'Loading restaurants...' : 'Waiting for everyone to finish Steps 1 & 2...'}
+                  Everyone needs to complete Steps 1 & 2 before we can load restaurants.
                 </p>
                 <p className="text-sm text-slate-500 mt-2">
                   {statistics?.participantCount || 0} {statistics?.participantCount === 1 ? 'person' : 'people'} in session
                 </p>
               </div>
-            ) : restaurants.length === 0 ? (
+            ) : isLoadingRestaurants ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mx-auto mb-4"></div>
-                <p className="text-slate-600">Waiting for everyone to finish Steps 1 & 2...</p>
+                <p className="text-slate-600">Loading restaurants...</p>
+              </div>
+            ) : restaurants.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-slate-600">No restaurants found in this area.</p>
               </div>
             ) : (
               <div className="grid grid-cols-5 gap-2">
