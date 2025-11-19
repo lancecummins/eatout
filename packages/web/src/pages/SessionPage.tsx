@@ -52,6 +52,43 @@ export function SessionPage() {
   // Track if we've already initiated restaurant loading for this session
   const restaurantLoadInitiated = useRef(false);
 
+  // Filter restaurants based on eliminated cuisines and venues from all users
+  const filteredRestaurants = (() => {
+    // Get all eliminated cuisines and venues from ALL users
+    const allEliminatedCuisines = new Set<string>();
+    const allEliminatedVenues = new Set<string>();
+
+    responses.forEach(response => {
+      response.eliminatedCuisines?.forEach(type => allEliminatedCuisines.add(type));
+      response.eliminatedVenues?.forEach(type => allEliminatedVenues.add(type));
+    });
+
+    const filtered = restaurants.filter(restaurant => {
+      // Check if restaurant matches any eliminated type
+      const restaurantTypes = restaurant.types || [];
+
+      // Check if ANY of the restaurant's types match an eliminated cuisine or venue
+      const hasEliminatedType = restaurantTypes.some(type =>
+        allEliminatedCuisines.has(type) || allEliminatedVenues.has(type)
+      );
+
+      // Keep the restaurant if it doesn't have any eliminated types
+      return !hasEliminatedType;
+    });
+
+    if (restaurants.length > 0 && currentStage === 'restaurants') {
+      console.log('Restaurant filtering:', {
+        total: restaurants.length,
+        filtered: filtered.length,
+        removed: restaurants.length - filtered.length,
+        eliminatedCuisines: Array.from(allEliminatedCuisines),
+        eliminatedVenues: Array.from(allEliminatedVenues)
+      });
+    }
+
+    return filtered;
+  })();
+
   // Load session and subscribe to updates
   useEffect(() => {
     if (!sessionId) {
@@ -227,9 +264,9 @@ export function SessionPage() {
 
   // Check if all restaurants in current batch are eliminated, load next batch
   useEffect(() => {
-    if (currentStage !== 'restaurants' || !statistics || restaurants.length === 0) return;
+    if (currentStage !== 'restaurants' || !statistics || filteredRestaurants.length === 0) return;
 
-    const currentBatch = restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
+    const currentBatch = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
     if (currentBatch.length === 0) return;
 
     // Get all eliminated restaurant IDs from all users
@@ -245,11 +282,11 @@ export function SessionPage() {
       allEliminatedRestaurants.has(restaurant.place_id)
     );
 
-    if (allEliminated && restaurantBatchOffset + 25 < restaurants.length) {
+    if (allEliminated && restaurantBatchOffset + 25 < filteredRestaurants.length) {
       console.log('All restaurants eliminated, loading next batch...');
       setRestaurantBatchOffset(prev => prev + 25);
     }
-  }, [currentStage, statistics, responses, restaurants, restaurantBatchOffset]);
+  }, [currentStage, statistics, responses, filteredRestaurants, restaurantBatchOffset]);
 
   const handleToggleCuisine = async (type: string) => {
     if (!sessionId) return;
@@ -511,13 +548,13 @@ export function SessionPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mx-auto mb-4"></div>
                 <p className="text-slate-600">Loading restaurants...</p>
               </div>
-            ) : restaurants.length === 0 ? (
+            ) : filteredRestaurants.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-600">No restaurants found in this area.</p>
+                <p className="text-slate-600">No restaurants found matching your preferences.</p>
               </div>
             ) : (
               <div className="grid grid-cols-5 gap-2">
-                {restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25).map((restaurant) => {
+                {filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25).map((restaurant) => {
                   const groupEliminationCount = statistics?.restaurantEliminationCounts[restaurant.place_id] || 0;
                   const isEliminated = (userResponse?.eliminatedRestaurants.includes(restaurant.place_id) || false) || groupEliminationCount > 0;
 
@@ -560,8 +597,8 @@ export function SessionPage() {
                 Here are the restaurants that survived elimination!
               </p>
               {(() => {
-                // Get the current batch of 25 restaurants shown in Step 3
-                const step3Restaurants = restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
+                // Get the current batch of 25 restaurants shown in Step 3 (already filtered)
+                const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
 
                 // Get all eliminated restaurant IDs from all users
                 const allEliminatedRestaurants = new Set<string>();
