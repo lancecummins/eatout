@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getSession,
@@ -53,7 +53,7 @@ export function SessionPage() {
   const restaurantLoadInitiated = useRef(false);
 
   // Filter restaurants based on eliminated cuisines and venues from all users
-  const filteredRestaurants = (() => {
+  const filteredRestaurants = useMemo(() => {
     // Get all eliminated cuisines and venues from ALL users
     const allEliminatedCuisines = new Set<string>();
     const allEliminatedVenues = new Set<string>();
@@ -87,7 +87,7 @@ export function SessionPage() {
     }
 
     return filtered;
-  })();
+  }, [restaurants, responses, currentStage]);
 
   // Load session and subscribe to updates
   useEffect(() => {
