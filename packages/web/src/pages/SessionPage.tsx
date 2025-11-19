@@ -123,14 +123,19 @@ export function SessionPage() {
   // Load restaurants when entering restaurants stage
   // This now uses a centralized approach: fetch once and store in session
   useEffect(() => {
-    if (currentStage === 'restaurants' && session && userResponse && !session.restaurants) {
+    // Don't check userResponse - it might be null if user hasn't made any eliminations yet
+    if (currentStage === 'restaurants' && session && !session.restaurants) {
       const loadRestaurants = async () => {
         if (!sessionId) return;
 
         // Check if this is a solo session or if all users are ready
         // Use the real-time responses data instead of making a fresh query
-        const isSoloSession = responses.length === 1;
-        const allUsersReady = responses.length > 0 && responses.every(
+        // Note: responses might not include current user yet if subscription hasn't fired
+        const isSoloSession = responses.length <= 1; // <= to handle empty responses
+
+        // For multi-user, check if all existing responses (excluding current user if not in list yet)
+        // are at restaurants stage or beyond
+        const otherUsersReady = responses.length === 0 || responses.every(
           response =>
             response.currentStage === 'restaurants' ||
             response.currentStage === 'complete'
@@ -138,12 +143,12 @@ export function SessionPage() {
 
         console.log('Restaurant loading check:', {
           isSoloSession,
-          allUsersReady,
+          otherUsersReady,
           responsesCount: responses.length,
           stages: responses.map(r => ({ userId: r.userId, stage: r.currentStage }))
         });
 
-        if (isSoloSession || allUsersReady) {
+        if (isSoloSession || otherUsersReady) {
           // Load restaurants if solo OR all users are ready
           console.log('Loading restaurants for Step 3...');
           setIsLoadingRestaurants(true);
