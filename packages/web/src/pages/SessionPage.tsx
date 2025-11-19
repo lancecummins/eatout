@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getSession,
@@ -48,6 +48,9 @@ export function SessionPage() {
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [isWaitingForOthers, setIsWaitingForOthers] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Track if we've already initiated restaurant loading for this session
+  const restaurantLoadInitiated = useRef(false);
 
   // Load session and subscribe to updates
   useEffect(() => {
@@ -123,73 +126,81 @@ export function SessionPage() {
   // Load restaurants when entering restaurants stage
   // This now uses a centralized approach: fetch once and store in session
   useEffect(() => {
-    // Don't check userResponse - it might be null if user hasn't made any eliminations yet
-    if (currentStage === 'restaurants' && session && !session.restaurants) {
-      const loadRestaurants = async () => {
-        if (!sessionId) return;
-
-        // Check if this is a solo session or if all users are ready
-        // Use the real-time responses data instead of making a fresh query
-        // Note: responses might not include current user yet if subscription hasn't fired
-        const isSoloSession = responses.length <= 1; // <= to handle empty responses
-
-        // For multi-user, check if all existing responses (excluding current user if not in list yet)
-        // are at restaurants stage or beyond
-        const otherUsersReady = responses.length === 0 || responses.every(
-          response =>
-            response.currentStage === 'restaurants' ||
-            response.currentStage === 'complete'
-        );
-
-        console.log('Restaurant loading check:', {
-          isSoloSession,
-          otherUsersReady,
-          responsesCount: responses.length,
-          stages: responses.map(r => ({ userId: r.userId, stage: r.currentStage }))
-        });
-
-        if (isSoloSession || otherUsersReady) {
-          // Load restaurants if solo OR all users are ready
-          console.log('Loading restaurants for Step 3...');
-          setIsLoadingRestaurants(true);
-          setIsWaitingForOthers(false);
-
-          try {
-            // Fetch all restaurants in the area
-            // We'll search for all types and let individual filtering happen client-side
-            const restaurantsData = await searchNearbyRestaurants({
-              location: session.location,
-              radius: session.location.radius,
-            });
-
-            console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
-
-            // Store restaurants in session so all users see the same list
-            await storeRestaurantsInSession(sessionId, userId, restaurantsData);
-            console.log('Restaurants stored in session successfully');
-          } catch (err) {
-            console.error('Error loading restaurants:', err);
-            setIsLoadingRestaurants(false);
-          }
-        } else {
-          // Multi-user session but not all users are ready
-          console.log('Waiting for other users to complete Steps 1 & 2...');
-          setIsWaitingForOthers(true);
-          setIsLoadingRestaurants(false);
-        }
-      };
-
-      loadRestaurants();
-    }
-
     // If session has restaurants already, use them
     if (currentStage === 'restaurants' && session?.restaurants) {
       console.log('Using stored restaurants from session:', session.restaurants.length);
       setRestaurants(session.restaurants);
       setIsLoadingRestaurants(false);
       setIsWaitingForOthers(false);
+      return;
     }
-  }, [currentStage, session, userResponse, sessionId, userId, responses]);
+
+    // Don't load if we're not on restaurants stage or if we've already initiated loading
+    if (currentStage !== 'restaurants' || !session || restaurantLoadInitiated.current) {
+      return;
+    }
+
+    const loadRestaurants = async () => {
+      if (!sessionId) return;
+
+      // Check if this is a solo session or if all users are ready
+      // Use the real-time responses data instead of making a fresh query
+      // Note: responses might not include current user yet if subscription hasn't fired
+      const isSoloSession = responses.length <= 1; // <= to handle empty responses
+
+      // For multi-user, check if all existing responses (excluding current user if not in list yet)
+      // are at restaurants stage or beyond
+      const otherUsersReady = responses.length === 0 || responses.every(
+        response =>
+          response.currentStage === 'restaurants' ||
+          response.currentStage === 'complete'
+      );
+
+      console.log('Restaurant loading check:', {
+        isSoloSession,
+        otherUsersReady,
+        responsesCount: responses.length,
+        stages: responses.map(r => ({ userId: r.userId, stage: r.currentStage }))
+      });
+
+      if (isSoloSession || otherUsersReady) {
+        // Mark that we've initiated loading to prevent duplicate requests
+        restaurantLoadInitiated.current = true;
+
+        // Load restaurants if solo OR all users are ready
+        console.log('Loading restaurants for Step 3...');
+        setIsLoadingRestaurants(true);
+        setIsWaitingForOthers(false);
+
+        try {
+          // Fetch all restaurants in the area
+          // We'll search for all types and let individual filtering happen client-side
+          const restaurantsData = await searchNearbyRestaurants({
+            location: session.location,
+            radius: session.location.radius,
+          });
+
+          console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
+
+          // Store restaurants in session so all users see the same list
+          await storeRestaurantsInSession(sessionId, userId, restaurantsData);
+          console.log('Restaurants stored in session successfully');
+        } catch (err) {
+          console.error('Error loading restaurants:', err);
+          setIsLoadingRestaurants(false);
+          // Reset flag on error so they can try again
+          restaurantLoadInitiated.current = false;
+        }
+      } else {
+        // Multi-user session but not all users are ready
+        console.log('Waiting for other users to complete Steps 1 & 2...');
+        setIsWaitingForOthers(true);
+        setIsLoadingRestaurants(false);
+      }
+    };
+
+    loadRestaurants();
+  }, [currentStage, session, sessionId, userId, responses]);
 
   const handleAdvanceStage = async () => {
     if (!sessionId) return;
