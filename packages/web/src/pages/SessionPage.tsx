@@ -544,6 +544,47 @@ export function SessionPage() {
               </h2>
             </div>
 
+            {/* Debug Panel - Show filtering info */}
+            {restaurants.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                <p className="font-semibold text-blue-900 mb-1">🔍 Debug: Filtering Info</p>
+                <p className="text-blue-800">
+                  Total fetched from Google: <strong>{restaurants.length}</strong> restaurants
+                </p>
+                <p className="text-blue-800">
+                  After filtering: <strong>{filteredRestaurants.length}</strong> restaurants
+                </p>
+                <p className="text-blue-800">
+                  Removed: <strong>{restaurants.length - filteredRestaurants.length}</strong> ({Math.round((restaurants.length - filteredRestaurants.length) / restaurants.length * 100)}%)
+                </p>
+                {(() => {
+                  const allEliminatedCuisines = new Set<string>();
+                  const allEliminatedVenues = new Set<string>();
+                  responses.forEach(response => {
+                    response.eliminatedCuisines?.forEach(type => allEliminatedCuisines.add(type));
+                    response.eliminatedVenues?.forEach(type => allEliminatedVenues.add(type));
+                  });
+                  return (
+                    <>
+                      {allEliminatedCuisines.size > 0 && (
+                        <p className="text-blue-800 mt-1">
+                          Eliminated cuisines: <strong>{Array.from(allEliminatedCuisines).join(', ')}</strong>
+                        </p>
+                      )}
+                      {allEliminatedVenues.size > 0 && (
+                        <p className="text-blue-800">
+                          Eliminated venues: <strong>{Array.from(allEliminatedVenues).join(', ')}</strong>
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+                <p className="text-blue-600 mt-1 italic">
+                  Note: Currently fetching ALL types from Google, then filtering client-side
+                </p>
+              </div>
+            )}
+
             {isWaitingForOthers ? (
               <div className="text-center py-12">
                 <div className="mb-4">
