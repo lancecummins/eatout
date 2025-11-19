@@ -205,7 +205,7 @@ export async function searchNearbyRestaurants(
     'korean_restaurant',
     'vietnamese_restaurant',
     'middle_eastern_restaurant',
-    'latin_american_restaurant',
+    // 'latin_american_restaurant', // Removed - not supported by API
     'fast_food_restaurant',
     'cafe',
     'pizza_restaurant',

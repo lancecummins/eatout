@@ -219,8 +219,24 @@ export function SessionPage() {
 
           console.log('Restaurants loaded:', restaurantsData.length, 'unique restaurants found');
 
+          // Slim down restaurant data to reduce Firestore document size
+          // Firestore has a 1MB limit per document, so we only keep essential fields
+          const slimRestaurants = restaurantsData.map(r => ({
+            place_id: r.place_id,
+            name: r.name,
+            rating: r.rating,
+            types: r.types,
+            vicinity: r.vicinity,
+          }));
+
+          console.log('Storing slim restaurant data:', {
+            original: JSON.stringify(restaurantsData).length,
+            slimmed: JSON.stringify(slimRestaurants).length,
+            reduction: `${Math.round((1 - JSON.stringify(slimRestaurants).length / JSON.stringify(restaurantsData).length) * 100)}%`
+          });
+
           // Store restaurants in session so all users see the same list
-          await storeRestaurantsInSession(sessionId, userId, restaurantsData);
+          await storeRestaurantsInSession(sessionId, userId, slimRestaurants);
           console.log('Restaurants stored in session successfully');
         } catch (err) {
           console.error('Error loading restaurants:', err);
