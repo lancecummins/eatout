@@ -63,24 +63,42 @@ export function SessionPage() {
       response.eliminatedVenues?.forEach(type => allEliminatedVenues.add(type));
     });
 
-    const filtered = restaurants.filter(restaurant => {
-      // Check if restaurant matches any eliminated type
+    // Calculate which cuisines are KEPT (not eliminated)
+    const allCuisineTypes = new Set(CUISINE_CATEGORIES.map(c => c.type));
+    const keptCuisines = new Set<string>();
+    allCuisineTypes.forEach(type => {
+      if (!allEliminatedCuisines.has(type)) {
+        keptCuisines.add(type);
+      }
+    });
+
+    // Two-step filtering process:
+    // Step 1: Keep ONLY restaurants that have at least ONE kept cuisine type
+    const afterCuisineFilter = restaurants.filter(restaurant => {
       const restaurantTypes = restaurant.types || [];
+      // Restaurant must have at least one of the non-eliminated cuisine types
+      return restaurantTypes.some(type => keptCuisines.has(type));
+    });
 
-      // Check if ANY of the restaurant's types match an eliminated cuisine or venue
-      const hasEliminatedType = restaurantTypes.some(type =>
-        allEliminatedCuisines.has(type) || allEliminatedVenues.has(type)
+    // Step 2: Filter by eliminated venues (only apply to cuisine survivors)
+    const filtered = afterCuisineFilter.filter(restaurant => {
+      const restaurantTypes = restaurant.types || [];
+      const hasEliminatedVenue = restaurantTypes.some(type =>
+        allEliminatedVenues.has(type)
       );
-
-      // Keep the restaurant if it doesn't have any eliminated types
-      return !hasEliminatedType;
+      return !hasEliminatedVenue; // Keep if no eliminated venue
     });
 
     if (restaurants.length > 0 && currentStage === 'restaurants') {
-      console.log('Restaurant filtering:', {
-        total: restaurants.length,
-        filtered: filtered.length,
-        removed: restaurants.length - filtered.length,
+      console.log('🔍 Two-Step Restaurant Filtering:', {
+        step1_total: restaurants.length,
+        step1_keptCuisines: Array.from(keptCuisines),
+        step1_afterCuisineFilter: afterCuisineFilter.length,
+        step1_removedByCuisine: restaurants.length - afterCuisineFilter.length,
+        step2_afterVenueFilter: filtered.length,
+        step2_removedByVenue: afterCuisineFilter.length - filtered.length,
+        finalTotal: filtered.length,
+        totalRemoved: restaurants.length - filtered.length,
         eliminatedCuisines: Array.from(allEliminatedCuisines),
         eliminatedVenues: Array.from(allEliminatedVenues)
       });
@@ -543,47 +561,6 @@ export function SessionPage() {
                 Step 3: Which restaurants are out?
               </h2>
             </div>
-
-            {/* Debug Panel - Show filtering info */}
-            {restaurants.length > 0 && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
-                <p className="font-semibold text-blue-900 mb-1">🔍 Debug: Filtering Info</p>
-                <p className="text-blue-800">
-                  Total fetched from Google: <strong>{restaurants.length}</strong> restaurants
-                </p>
-                <p className="text-blue-800">
-                  After filtering: <strong>{filteredRestaurants.length}</strong> restaurants
-                </p>
-                <p className="text-blue-800">
-                  Removed: <strong>{restaurants.length - filteredRestaurants.length}</strong> ({Math.round((restaurants.length - filteredRestaurants.length) / restaurants.length * 100)}%)
-                </p>
-                {(() => {
-                  const allEliminatedCuisines = new Set<string>();
-                  const allEliminatedVenues = new Set<string>();
-                  responses.forEach(response => {
-                    response.eliminatedCuisines?.forEach(type => allEliminatedCuisines.add(type));
-                    response.eliminatedVenues?.forEach(type => allEliminatedVenues.add(type));
-                  });
-                  return (
-                    <>
-                      {allEliminatedCuisines.size > 0 && (
-                        <p className="text-blue-800 mt-1">
-                          Eliminated cuisines: <strong>{Array.from(allEliminatedCuisines).join(', ')}</strong>
-                        </p>
-                      )}
-                      {allEliminatedVenues.size > 0 && (
-                        <p className="text-blue-800">
-                          Eliminated venues: <strong>{Array.from(allEliminatedVenues).join(', ')}</strong>
-                        </p>
-                      )}
-                    </>
-                  );
-                })()}
-                <p className="text-blue-600 mt-1 italic">
-                  Note: Currently fetching ALL types from Google, then filtering client-side
-                </p>
-              </div>
-            )}
 
             {isWaitingForOthers ? (
               <div className="text-center py-12">
