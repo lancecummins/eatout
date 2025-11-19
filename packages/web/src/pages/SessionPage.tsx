@@ -15,7 +15,6 @@ import {
   getUserResponse,
   calculateGroupStatistics,
   storeRestaurantsInSession,
-  areAllUsersReadyForRestaurants,
   Session,
   Restaurant,
   UserResponse,
@@ -129,8 +128,20 @@ export function SessionPage() {
         if (!sessionId) return;
 
         // Check if this is a solo session or if all users are ready
+        // Use the real-time responses data instead of making a fresh query
         const isSoloSession = responses.length === 1;
-        const allUsersReady = await areAllUsersReadyForRestaurants(sessionId);
+        const allUsersReady = responses.length > 0 && responses.every(
+          response =>
+            response.currentStage === 'restaurants' ||
+            response.currentStage === 'complete'
+        );
+
+        console.log('Restaurant loading check:', {
+          isSoloSession,
+          allUsersReady,
+          responsesCount: responses.length,
+          stages: responses.map(r => ({ userId: r.userId, stage: r.currentStage }))
+        });
 
         if (isSoloSession || allUsersReady) {
           // Load restaurants if solo OR all users are ready
