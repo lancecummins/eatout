@@ -148,16 +148,19 @@ async function searchByType(
 
     if (!response.ok) {
       // Don't throw on 404 or empty results - just return empty array
-      console.warn(`No results for type ${type}: ${response.status}`);
+      const errorText = await response.text();
+      console.warn(`No results for type ${type}: ${response.status}`, errorText);
       return [];
     }
 
     const data = await response.json() as NewPlacesApiResponse;
 
     if (!data.places || data.places.length === 0) {
+      console.log(`Type ${type}: 0 results`);
       return [];
     }
 
+    console.log(`Type ${type}: ${data.places.length} results`);
     return data.places.map(convertNewPlaceToRestaurant);
   } catch (error) {
     console.error(`Error fetching restaurants for type ${type}:`, error);
@@ -177,6 +180,13 @@ export async function searchNearbyRestaurants(
   }
 
   const { location, radius = 5000, types } = params;
+
+  console.log('searchNearbyRestaurants called with:', {
+    location,
+    radius,
+    types,
+    apiKeyPresent: !!apiKey
+  });
 
   // If specific types are provided, search for those
   // Otherwise, search for all predefined categories

@@ -236,6 +236,31 @@ export function subscribeToSession(
 }
 
 /**
+ * Clean undefined values from an object (Firestore doesn't allow undefined)
+ */
+function cleanUndefined(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(cleanUndefined);
+  }
+
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        cleaned[key] = cleanUndefined(obj[key]);
+      }
+    }
+    return cleaned;
+  }
+
+  return obj;
+}
+
+/**
  * Store fetched restaurants in the session
  * This should only be called once when the first user reaches step 3
  */
@@ -248,8 +273,11 @@ export async function storeRestaurantsInSession(
 
   console.log('storeRestaurantsInSession: Storing', restaurants.length, 'restaurants for session', sessionId);
 
+  // Clean undefined values from restaurants before storing (Firestore doesn't allow undefined)
+  const cleanedRestaurants = cleanUndefined(restaurants);
+
   await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
-    restaurants,
+    restaurants: cleanedRestaurants,
     restaurantsFetchedAt: Date.now(),
     restaurantsFetchedBy: userId,
   });
