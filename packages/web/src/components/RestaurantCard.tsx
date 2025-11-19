@@ -1,4 +1,4 @@
-import { Restaurant, CUISINE_CATEGORIES, VENUE_CATEGORIES } from '@eatout/shared';
+import { Restaurant } from '@eatout/shared';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -17,15 +17,6 @@ export function RestaurantCard({
 }: RestaurantCardProps) {
   // Show collaborative elimination - red card with X if ANYONE eliminated it
   const showEliminated = isEliminated || eliminationCount > 0;
-
-  // Debug: Find cuisine and venue types for this restaurant
-  const restaurantTypes = restaurant.types || [];
-  const cuisineTypes = restaurantTypes.filter(type =>
-    CUISINE_CATEGORIES.some(c => c.type === type)
-  );
-  const venueTypes = restaurantTypes.filter(type =>
-    VENUE_CATEGORIES.some(v => v.type === type)
-  );
 
   return (
     <button
@@ -60,20 +51,6 @@ export function RestaurantCard({
           <span className="text-slate-900 font-semibold text-[10px]">{restaurant.rating}</span>
         </div>
       )}
-
-      {/* Debug: Show cuisine and venue type tags */}
-      <div className="flex flex-col gap-0.5 text-[8px] mt-0.5">
-        {cuisineTypes.length > 0 && (
-          <div className="bg-blue-100 text-blue-800 px-1 rounded">
-            C: {cuisineTypes.map(t => t.replace('_restaurant', '').replace('_', ' ')).join(', ')}
-          </div>
-        )}
-        {venueTypes.length > 0 && (
-          <div className="bg-purple-100 text-purple-800 px-1 rounded">
-            V: {venueTypes.map(t => t.replace('_restaurant', '').replace('_shop', '').replace('_', ' ')).join(', ')}
-          </div>
-        )}
-      </div>
 
       {/* Big X Overlay when eliminated by anyone */}
       {showEliminated && (

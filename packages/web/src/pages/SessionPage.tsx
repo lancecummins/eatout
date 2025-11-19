@@ -43,7 +43,7 @@ export function SessionPage() {
   const [userResponse, setUserResponse] = useState<UserResponse | null>(null);
   const [statistics, setStatistics] = useState<GroupStatistics | null>(null);
   const [currentStage, setCurrentStage] = useState<Stage>('cuisines');
-  const [restaurantBatchOffset, setRestaurantBatchOffset] = useState(0); // Track which batch of 25 we're showing
+  const [restaurantBatchOffset, setRestaurantBatchOffset] = useState(0); // Track which batch of 8 we're showing
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [isWaitingForOthers, setIsWaitingForOthers] = useState(false);
@@ -300,7 +300,7 @@ export function SessionPage() {
   useEffect(() => {
     if (currentStage !== 'restaurants' || !statistics || filteredRestaurants.length === 0) return;
 
-    const currentBatch = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
+    const currentBatch = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
     if (currentBatch.length === 0) return;
 
     // Get all eliminated restaurant IDs from all users
@@ -316,9 +316,9 @@ export function SessionPage() {
       allEliminatedRestaurants.has(restaurant.place_id)
     );
 
-    if (allEliminated && restaurantBatchOffset + 25 < filteredRestaurants.length) {
+    if (allEliminated && restaurantBatchOffset + 8 < filteredRestaurants.length) {
       console.log('All restaurants eliminated, loading next batch...');
-      setRestaurantBatchOffset(prev => prev + 25);
+      setRestaurantBatchOffset(prev => prev + 8);
     }
   }, [currentStage, statistics, responses, filteredRestaurants, restaurantBatchOffset]);
 
@@ -587,8 +587,8 @@ export function SessionPage() {
                 <p className="text-slate-600">No restaurants found matching your preferences.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-5 gap-2">
-                {filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25).map((restaurant) => {
+              <div className="grid grid-cols-2 gap-2">
+                {filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8).map((restaurant) => {
                   const groupEliminationCount = statistics?.restaurantEliminationCounts[restaurant.place_id] || 0;
                   const isEliminated = (userResponse?.eliminatedRestaurants.includes(restaurant.place_id) || false) || groupEliminationCount > 0;
 
@@ -631,8 +631,8 @@ export function SessionPage() {
                 Here are the restaurants that survived elimination!
               </p>
               {(() => {
-                // Get the current batch of 25 restaurants shown in Step 3 (already filtered)
-                const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
+                // Get the current batch of 8 restaurants shown in Step 3 (already filtered)
+                const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
 
                 // Get all eliminated restaurant IDs from all users
                 const allEliminatedRestaurants = new Set<string>();
@@ -656,8 +656,8 @@ export function SessionPage() {
             </div>
 
             {(() => {
-              // Get the current batch of 25 restaurants shown in Step 3
-              const step3Restaurants = restaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 25);
+              // Get the current batch of 8 restaurants shown in Step 3 (use filteredRestaurants, not raw restaurants)
+              const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
 
               // Get all eliminated restaurant IDs from all users
               const allEliminatedRestaurants = new Set<string>();
@@ -691,7 +691,7 @@ export function SessionPage() {
               }
 
               return (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {finalRestaurants.map((restaurant) => (
                     <RestaurantCard
                       key={restaurant.place_id}
