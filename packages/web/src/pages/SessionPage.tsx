@@ -623,38 +623,6 @@ export function SessionPage() {
 
         {currentStage === 'complete' && (
           <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                🎉 Final Results
-              </h2>
-              <p className="text-slate-600 text-lg">
-                Here are the restaurants that survived elimination!
-              </p>
-              {(() => {
-                // Get the current batch of 8 restaurants shown in Step 3 (already filtered)
-                const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
-
-                // Get all eliminated restaurant IDs from all users
-                const allEliminatedRestaurants = new Set<string>();
-                responses.forEach(response => {
-                  response.eliminatedRestaurants?.forEach(placeId => {
-                    allEliminatedRestaurants.add(placeId);
-                  });
-                });
-
-                // Filter to only show non-eliminated restaurants from Step 3
-                const finalRestaurants = step3Restaurants.filter(
-                  restaurant => !allEliminatedRestaurants.has(restaurant.place_id)
-                );
-
-                return (
-                  <p className="text-sm text-slate-500 mt-2">
-                    {finalRestaurants.length} restaurants remaining from {step3Restaurants.length} options
-                  </p>
-                );
-              })()}
-            </div>
-
             {(() => {
               // Get the current batch of 8 restaurants shown in Step 3 (use filteredRestaurants, not raw restaurants)
               const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
@@ -690,18 +658,66 @@ export function SessionPage() {
                 );
               }
 
+              // Pick the winner! (randomly from the survivors)
+              const winnerIndex = Math.floor(Math.random() * finalRestaurants.length);
+              const winner = finalRestaurants[winnerIndex];
+
+              // Google Maps link
+              const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(winner.name)}&query_place_id=${winner.place_id}`;
+
               return (
-                <div className="grid grid-cols-2 gap-2">
-                  {finalRestaurants.map((restaurant) => (
-                    <RestaurantCard
-                      key={restaurant.place_id}
-                      restaurant={restaurant}
-                      isEliminated={false}
-                      eliminationCount={0}
-                      totalParticipants={0}
-                      onToggle={() => {}}
-                    />
-                  ))}
+                <div className="text-center space-y-6">
+                  {/* Celebratory Header */}
+                  <div className="space-y-2">
+                    <div className="text-6xl">🎉🍽️🎊</div>
+                    <h2 className="text-3xl font-bold text-primary-600">
+                      We Have a Winner!
+                    </h2>
+                    <p className="text-lg text-slate-600">
+                      Your group has chosen...
+                    </p>
+                  </div>
+
+                  {/* Winner Card */}
+                  <div className="card p-8 bg-gradient-to-br from-primary-50 to-white border-2 border-primary-200 shadow-xl max-w-lg mx-auto">
+                    <h3 className="text-4xl font-bold text-slate-900 mb-4">
+                      {winner.name}
+                    </h3>
+
+                    {winner.rating && (
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <svg className="w-6 h-6 fill-current text-yellow-500" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className="text-2xl font-semibold text-slate-900">{winner.rating}</span>
+                        <span className="text-slate-500">rating</span>
+                      </div>
+                    )}
+
+                    {winner.vicinity && (
+                      <p className="text-slate-600 mb-6">{winner.vicinity}</p>
+                    )}
+
+                    {/* Map it and go button */}
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-lg inline-flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Map it and go!
+                    </a>
+                  </div>
+
+                  {finalRestaurants.length > 1 && (
+                    <p className="text-sm text-slate-500">
+                      {finalRestaurants.length} options survived - this one was randomly selected!
+                    </p>
+                  )}
                 </div>
               );
             })()}
