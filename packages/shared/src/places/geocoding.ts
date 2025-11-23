@@ -77,6 +77,9 @@ export async function geocodeZipCode(zipCode: string): Promise<GeocodeResult> {
       if (data.status === 'ZERO_RESULTS') {
         throw new Error('Zip code not found. Please check and try again.');
       }
+      if (data.status === 'REQUEST_DENIED') {
+        throw new Error('Geocoding API is not enabled. Please enable the Geocoding API in Google Cloud Console.');
+      }
       throw new Error(`Geocoding failed: ${data.status}`);
     }
 
