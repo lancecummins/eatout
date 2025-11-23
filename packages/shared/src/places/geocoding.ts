@@ -9,6 +9,19 @@ export interface GeocodeResult {
   formattedAddress: string;
 }
 
+interface GeocodingApiResponse {
+  status: string;
+  results: Array<{
+    formatted_address: string;
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      };
+    };
+  }>;
+}
+
 let apiKey: string | null = null;
 
 /**
@@ -57,7 +70,7 @@ export async function geocodeZipCode(zipCode: string): Promise<GeocodeResult> {
       throw new Error(`Geocoding API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as GeocodingApiResponse;
 
     // Check for API errors
     if (data.status !== 'OK') {
