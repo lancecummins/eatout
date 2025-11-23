@@ -2,7 +2,7 @@
  * Firebase initialization for web app
  */
 
-import { initializeFirebase, initializePlacesApi } from '@eatout/shared';
+import { initializeFirebase, initializePlacesApi, setGeocodingApiKey } from '@eatout/shared';
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -19,5 +19,8 @@ initializeFirebase(firebaseConfig);
 // Initialize Google Places API
 const placesApiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
 initializePlacesApi({ apiKey: placesApiKey });
+
+// Initialize Geocoding API (uses same key as Places API)
+setGeocodingApiKey(placesApiKey);
 
 export { firebaseConfig };

@@ -5,6 +5,18 @@
 
 import { Restaurant, PlacesSearchParams } from '../types';
 
+/**
+ * Fisher-Yates shuffle algorithm to randomize array in-place
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 const PLACES_API_BASE = 'https://places.googleapis.com/v1';
 
 export interface PlacesApiConfig {
@@ -242,7 +254,12 @@ export async function searchNearbyRestaurants(
 
   console.log(`Found ${uniqueRestaurants.length} unique restaurants across all categories`);
 
-  return uniqueRestaurants;
+  // Shuffle results so users see different restaurants each time
+  const shuffledRestaurants = shuffleArray(uniqueRestaurants);
+
+  console.log('Shuffled restaurant order for variety');
+
+  return shuffledRestaurants;
 }
 
 /**

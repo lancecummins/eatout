@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createSession, Location } from '@eatout/shared';
+import { createSession, Location, geocodeZipCode, isValidZipCode } from '@eatout/shared';
 import { useUserId } from '../hooks/useUserId';
 
 export function CreateSessionPage() {
@@ -8,7 +8,9 @@ export function CreateSessionPage() {
   const userId = useUserId();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [radius, setRadius] = useState(5000); // Default 5km
+  const [radius, setRadius] = useState(8047); // Default 5 miles
+  const [showZipCodeInput, setShowZipCodeInput] = useState(false);
+  const [zipCode, setZipCode] = useState('');
 
   const handleGetLocation = async () => {
     setIsLoading(true);
@@ -60,6 +62,51 @@ export function CreateSessionPage() {
       } else {
         setError(`Failed to create session: ${err.message || 'Unknown error'}`);
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleZipCodeSubmit = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('Step 1: Validating zip code...');
+
+      // Validate zip code format
+      if (!isValidZipCode(zipCode)) {
+        setError('Please enter a valid 5-digit US zip code');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Step 2: Geocoding zip code...');
+
+      // Geocode the zip code to get coordinates
+      const geocodeResult = await geocodeZipCode(zipCode);
+
+      console.log('Step 3: Got coordinates:', geocodeResult.latitude, geocodeResult.longitude);
+
+      const location: Location = {
+        latitude: geocodeResult.latitude,
+        longitude: geocodeResult.longitude,
+        address: geocodeResult.formattedAddress,
+        radius: radius,
+      };
+
+      console.log('Step 4: Creating session in Firebase...');
+
+      // Create session
+      const session = await createSession(userId, location);
+
+      console.log('Step 5: Session created:', session.id);
+
+      // Navigate to session page
+      navigate(`/session/${session.id}`);
+    } catch (err: any) {
+      console.error('Error creating session with zip code:', err);
+      setError(err.message || 'Failed to create session. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -242,40 +289,117 @@ export function CreateSessionPage() {
             </div>
           )}
 
-          {/* Action Button */}
-          <button
-            onClick={handleGetLocation}
-            disabled={isLoading}
-            className="w-full btn btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Creating Session...
-              </span>
-            ) : (
-              'Get My Location & Create Session'
-            )}
-          </button>
+          {/* Action Buttons */}
+          {!showZipCodeInput ? (
+            <div className="space-y-3">
+              <button
+                onClick={handleGetLocation}
+                disabled={isLoading}
+                className="w-full btn btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Creating Session...
+                  </span>
+                ) : (
+                  'Use My Location & Create Session'
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowZipCodeInput(true)}
+                disabled={isLoading}
+                className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+              >
+                Or enter a zip code instead →
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="zipCode" className="block text-sm font-medium text-slate-700 mb-2">
+                  Enter Zip Code
+                </label>
+                <input
+                  id="zipCode"
+                  type="text"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleZipCodeSubmit()}
+                  placeholder="e.g., 90210"
+                  maxLength={10}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <button
+                onClick={handleZipCodeSubmit}
+                disabled={isLoading || !zipCode.trim()}
+                className="w-full btn btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Creating Session...
+                  </span>
+                ) : (
+                  'Create Session'
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowZipCodeInput(false);
+                  setZipCode('');
+                  setError(null);
+                }}
+                disabled={isLoading}
+                className="w-full text-sm text-slate-600 hover:text-slate-700 font-medium disabled:opacity-50"
+              >
+                ← Back to location
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Privacy Note */}
