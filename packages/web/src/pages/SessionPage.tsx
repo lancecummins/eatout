@@ -15,6 +15,7 @@ import {
   getUserResponse,
   calculateGroupStatistics,
   storeRestaurantsInSession,
+  lockInWinner,
   Session,
   Restaurant,
   UserResponse,
@@ -286,6 +287,42 @@ export function SessionPage() {
       // Scroll to top when advancing to next stage
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleRevealWinner = async () => {
+    if (!sessionId || !session) return;
+
+    // Get the current batch of 8 restaurants shown in Step 3 (use filteredRestaurants)
+    const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
+
+    // Get all eliminated restaurant IDs from all users
+    const allEliminatedRestaurants = new Set<string>();
+    responses.forEach(response => {
+      response.eliminatedRestaurants?.forEach(placeId => {
+        allEliminatedRestaurants.add(placeId);
+      });
+    });
+
+    // Filter to only show non-eliminated restaurants from Step 3
+    const finalRestaurants = step3Restaurants.filter(
+      restaurant => !allEliminatedRestaurants.has(restaurant.place_id)
+    );
+
+    if (finalRestaurants.length === 0) {
+      setError('No restaurants left! Please go back and remove some eliminations.');
+      return;
+    }
+
+    // Pick a random winner
+    const winnerIndex = Math.floor(Math.random() * finalRestaurants.length);
+    const winner = finalRestaurants[winnerIndex];
+
+    console.log('Admin revealing winner:', winner.name);
+
+    // Lock in the winner to the session
+    await lockInWinner(sessionId, winner);
+
+    // Winner will be shown via real-time subscription update
   };
 
   const handleStageClick = async (stage: Stage) => {
@@ -607,12 +644,33 @@ export function SessionPage() {
             )}
 
             <div className="text-center space-y-4">
-              <button
-                onClick={handleAdvanceStage}
-                className="btn btn-primary btn-lg"
-              >
-                See Final Results →
-              </button>
+              {/* Check if winner is already selected */}
+              {session?.winner ? (
+                <button
+                  onClick={handleAdvanceStage}
+                  className="btn btn-primary btn-lg"
+                >
+                  See Final Results →
+                </button>
+              ) : session?.adminId === userId ? (
+                // Admin can reveal the winner
+                <button
+                  onClick={handleRevealWinner}
+                  className="btn btn-primary btn-lg"
+                >
+                  🎉 Reveal Winner!
+                </button>
+              ) : (
+                // Non-admin waits for host to reveal
+                <div className="space-y-3">
+                  <div className="text-lg text-slate-600">
+                    ⏳ Waiting for host to reveal the winner...
+                  </div>
+                  <div className="text-sm text-slate-500">
+                    The session host will select the final restaurant
+                  </div>
+                </div>
+              )}
               {/* Progress Steps */}
               <div className="pt-2">
                 <ProgressSteps currentStage={currentStage} onStageClick={handleStageClick} />
@@ -624,6 +682,27 @@ export function SessionPage() {
         {currentStage === 'complete' && (
           <div className="space-y-6">
             {(() => {
+              // Check if winner has been selected by admin
+              if (!session?.winner) {
+                // No winner yet - show waiting message
+                return (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">⏳</div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                      Waiting for Winner
+                    </h2>
+                    <p className="text-slate-600">
+                      {session?.adminId === userId
+                        ? "Go back to Step 3 and click 'Reveal Winner!' to select the final restaurant."
+                        : "The session host will reveal the winner soon!"}
+                    </p>
+                  </div>
+                );
+              }
+
+              // Winner has been selected - show it!
+              const winner = session.winner;
+
               // Get the current batch of 8 restaurants shown in Step 3 (use filteredRestaurants, not raw restaurants)
               const step3Restaurants = filteredRestaurants.slice(restaurantBatchOffset, restaurantBatchOffset + 8);
 
@@ -640,7 +719,7 @@ export function SessionPage() {
                 restaurant => !allEliminatedRestaurants.has(restaurant.place_id)
               );
 
-              if (finalRestaurants.length === 0) {
+              if (finalRestaurants.length === 0 && !session.winner) {
                 return (
                   <div className="card text-center py-12">
                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -657,10 +736,6 @@ export function SessionPage() {
                   </div>
                 );
               }
-
-              // Pick the winner! (randomly from the survivors)
-              const winnerIndex = Math.floor(Math.random() * finalRestaurants.length);
-              const winner = finalRestaurants[winnerIndex];
 
               // Google Maps link
               const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(winner.name)}&query_place_id=${winner.place_id}`;
@@ -715,7 +790,7 @@ export function SessionPage() {
 
                   {finalRestaurants.length > 1 && (
                     <p className="text-sm text-slate-500">
-                      {finalRestaurants.length} options survived - this one was randomly selected!
+                      {finalRestaurants.length} options survived - this one was randomly selected by the host!
                     </p>
                   )}
                 </div>

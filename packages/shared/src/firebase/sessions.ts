@@ -284,3 +284,26 @@ export async function storeRestaurantsInSession(
 
   console.log('storeRestaurantsInSession: Successfully stored restaurants');
 }
+
+/**
+ * Lock in the final winner (admin only)
+ * This should only be called by the session admin
+ */
+export async function lockInWinner(
+  sessionId: string,
+  winner: any
+): Promise<void> {
+  const db = getDb();
+
+  console.log('lockInWinner: Locking in winner for session', sessionId, ':', winner.name);
+
+  // Clean undefined values
+  const cleanedWinner = cleanUndefined(winner);
+
+  await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
+    winner: cleanedWinner,
+    winnerSelectedAt: Date.now(),
+  });
+
+  console.log('lockInWinner: Successfully locked in winner');
+}

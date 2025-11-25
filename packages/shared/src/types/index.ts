@@ -18,6 +18,8 @@ export interface Session {
   restaurants?: Restaurant[]; // Fetched restaurants for step 3 (stored once, shared by all)
   restaurantsFetchedAt?: number; // Timestamp when restaurants were fetched
   restaurantsFetchedBy?: string; // User ID who fetched the restaurants
+  winner?: Restaurant; // Final winner selected by admin (locked in)
+  winnerSelectedAt?: number; // Timestamp when winner was selected
 }
 
 export type SessionStatus = 'active' | 'completed' | 'expired';
